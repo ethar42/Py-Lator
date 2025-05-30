@@ -1,9 +1,19 @@
+# this instruction below is making a venv(virtual environment) when you first run the program
+# python -m venv .venv
+# start with $source .venv/bin/activate OR         (linux or mac)
+# start with $source .venv/Scripts/activate        (windows)
+# pip install necessary modules
+# pip install PyQt5
+# pip install googletrans
+# pip install qasync
+
 from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QComboBox,QPushButton, QLabel, QHBoxLayout,QVBoxLayout
 from PyQt5.QtGui import QFont
 from googletrans import Translator
 from languages import *
+import asyncio
+from qasync import QEventLoop, asyncSlot
 
-# 
 
 class Main(QWidget):
     def __init__(self):
@@ -21,7 +31,7 @@ class Main(QWidget):
         self.submit = QPushButton("Translate Now")
         self.input_option = QComboBox()
         self.output_option = QComboBox()
-        self.title = QLabel("PyLate")
+        self.title = QLabel("PyLate\n1.1")
         self.title.setFont(QFont("Helvetica",45))
         
         self.input_option.addItems(values)
@@ -67,7 +77,7 @@ class Main(QWidget):
         """)
         
     def settings(self):
-        self.setWindowTitle("PyLate 1.0")
+        self.setWindowTitle("PyLate 1.1")
         self.setGeometry(250,250,600,500)
     
     def button_events(self):
@@ -75,14 +85,15 @@ class Main(QWidget):
         self.reverse.clicked.connect(self.rev_click)
         self.reset.clicked.connect(self.reset_app)
     
-    def translate_click(self):
+    @asyncSlot()
+    async def translate_click(self):
         try:
             value_to_key1 = self.output_option.currentText()
             value_to_key2 = self.input_option.currentText()
             key_to_value1 = [k for k,v in LANGUAGES.items() if v == value_to_key1]
-
             key_to_value2 = [k for k,v in LANGUAGES.items() if v == value_to_key2]
-            self.script = self.translate_text(self.input_box.toPlainText(), key_to_value1[0],key_to_value2[0])
+
+            self.script = await self.translate_text(self.input_box.toPlainText(), key_to_value1[0],key_to_value2[0])
             self.output_box.setText(self.script)
         except Exception as e:
             print("Exception:", e)
@@ -93,9 +104,9 @@ class Main(QWidget):
         self.output_box.clear()
         
     
-    def translate_text(self, text, dest_lang, src_lang):
+    async def translate_text(self, text, dest_lang, src_lang):
         speaker = Translator()
-        translation = speaker.translate(text, dest=dest_lang, src=src_lang)
+        translation = await speaker.translate(text, dest=dest_lang, src=src_lang)
         return translation.text
     
     def rev_click(self):
@@ -110,6 +121,9 @@ class Main(QWidget):
     
 if __name__ in "__main__":
     app = QApplication([])
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
     main = Main()
     main.show()
-    app.exec_()
+    with loop:
+        loop.run_forever()
